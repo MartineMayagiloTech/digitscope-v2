@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07111f">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
+<title>DigitScope V2 — Matches/Differs Lab</title>
+</head>
+<body>
+<header class="topbar"><div><div class="brand">DigitScope <span>V2</span></div><div class="subtitle">Matches / Differs Statistical Lab</div></div><div class="top-actions"><span id="liveStatus" class="status offline">● Offline</span><button id="themeBtn" class="icon-btn">☾</button></div></header>
+<nav class="tabs"><button class="tab active" data-tab="live">Live Analyzer</button><button class="tab" data-tab="backtest">Backtest Lab</button><button class="tab" data-tab="performance">Performance</button></nav>
+<main class="container">
+<section id="live" class="tab-panel active">
+<div class="card"><div class="section-title"><h2>Live Market</h2><span id="tickClock">—</span></div>
+<div class="controls-grid">
+<label>Market<select id="symbol"><option value="1HZ10V">Volatility 10 (1s) Index</option><option value="1HZ25V">Volatility 25 (1s) Index</option><option value="1HZ50V">Volatility 50 (1s) Index</option><option value="1HZ75V">Volatility 75 (1s) Index</option><option value="1HZ100V">Volatility 100 (1s) Index</option><option value="R_10">Volatility 10 Index</option><option value="R_25">Volatility 25 Index</option><option value="R_50">Volatility 50 Index</option><option value="R_75">Volatility 75 Index</option><option value="R_100">Volatility 100 Index</option></select></label>
+<label>Analysis Window<select id="liveWindow"><option value="100">100 ticks</option><option value="500" selected>500 ticks</option><option value="1000">1,000 ticks</option></select></label>
+<label>Signal Threshold<select id="signalThreshold"><option value="55">55% — Exploratory</option><option value="60" selected>60% — Balanced</option><option value="65">65% — Selective</option><option value="70">70% — Strict</option></select></label>
+<div class="button-row"><button id="connectBtn" class="primary">Connect Live</button><button id="disconnectBtn" class="secondary" disabled>Disconnect</button><button id="clearLiveBtn" class="ghost">Clear Ticks</button></div>
+</div><div class="notice">Statistical setup only. The model does not guarantee the next digit or profitability.</div></div>
+<div class="metric-grid"><div class="metric card"><span>Latest Quote</span><strong id="latestQuote">—</strong></div><div class="metric card"><span>Last Digit</span><strong id="latestDigit">—</strong></div><div class="metric card"><span>Ticks in Window</span><strong id="liveSample">0</strong></div><div class="metric card"><span>Signal Quality</span><strong id="liveQuality">—</strong></div></div>
+<div class="signal-grid">
+<div class="signal-card match"><div class="signal-head"><div><small>PRIMARY SETUP</small><h2>MATCH</h2></div><span id="matchBadge" class="badge neutral">WAIT</span></div><div class="signal-digit" id="matchDigit">—</div><div class="signal-stat"><span>Model score</span><b id="matchScore">—</b></div><div class="signal-stat"><span>Observed frequency</span><b id="matchFreq">—</b></div><div class="signal-stat"><span>Current streak</span><b id="matchStreak">—</b></div></div>
+<div class="signal-card differs"><div class="signal-head"><div><small>PRIMARY SETUP</small><h2>DIFFERS</h2></div><span id="diffBadge" class="badge neutral">WAIT</span></div><div class="signal-digit" id="diffDigit">—</div><div class="signal-stat"><span>Model score</span><b id="diffScore">—</b></div><div class="signal-stat"><span>Observed frequency</span><b id="diffFreq">—</b></div><div class="signal-stat"><span>Current streak</span><b id="diffStreak">—</b></div></div>
+</div>
+<div class="card"><div class="section-title"><h2>Digit Distribution</h2><span id="distributionLabel">0 ticks</span></div><div id="digitBars" class="digit-bars"></div></div>
+<div class="split"><div class="card"><div class="section-title"><h2>Recent Digits</h2><span>Newest → oldest</span></div><div id="recentDigits" class="digit-strip"></div></div>
+<div class="card"><div class="section-title"><h2>Signal Diagnostics</h2></div><div class="diag-list"><div><span>Hot digit</span><b id="hotDigit">—</b></div><div><span>Cold digit</span><b id="coldDigit">—</b></div><div><span>Entropy</span><b id="entropy">—</b></div><div><span>Distribution balance</span><b id="balance">—</b></div><div><span>Latest streak</span><b id="latestStreak">—</b></div><div><span>Longest streak</span><b id="longestStreak">—</b></div></div></div></div>
+<div class="card"><div class="section-title"><h2>Live Signal Journal</h2><button id="clearJournalBtn" class="ghost small">Clear</button></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Type</th><th>Digit</th><th>Score</th><th>Quality</th></tr></thead><tbody id="journalBody"></tbody></table></div></div>
+</section>
+<section id="backtest" class="tab-panel">
+<div class="card"><div class="section-title"><h2>Backtest Lab</h2><span>Evaluate the signal logic before using real money</span></div>
+<div class="controls-grid">
+<label>Market<select id="btSymbol"><option value="1HZ10V">Volatility 10 (1s) Index</option><option value="1HZ25V">Volatility 25 (1s) Index</option><option value="1HZ50V">Volatility 50 (1s) Index</option><option value="1HZ75V">Volatility 75 (1s) Index</option><option value="1HZ100V">Volatility 100 (1s) Index</option><option value="R_10">Volatility 10 Index</option><option value="R_25">Volatility 25 Index</option><option value="R_50">Volatility 50 Index</option><option value="R_75">Volatility 75 Index</option><option value="R_100">Volatility 100 Index</option></select></label>
+<label>Historical Ticks<select id="btCount"><option value="1000">1,000</option><option value="5000" selected>5,000</option><option value="10000">10,000</option></select></label>
+<label>Lookback Window<select id="btWindow"><option value="100">100</option><option value="500" selected>500</option><option value="1000">1,000</option></select></label>
+<label>Signal Threshold<select id="btThreshold"><option value="55">55%</option><option value="60" selected>60%</option><option value="65">65%</option><option value="70">70%</option></select></label>
+<label>Contract Type<select id="btType"><option value="both" selected>Both</option><option value="match">MATCH only</option><option value="differs">DIFFERS only</option></select></label>
+<label>Stake per signal<input id="btStake" type="number" min="0.01" step="0.01" value="1"></label>
+<div class="button-row"><button id="loadHistoryBtn" class="primary">Load Historical Ticks</button><button id="runBacktestBtn" class="secondary" disabled>Run Backtest</button></div>
+</div><div id="btStatus" class="notice">Load historical tick data first.</div></div>
+<div class="metric-grid"><div class="metric card"><span>Signals</span><strong id="btSignals">—</strong></div><div class="metric card"><span>Wins</span><strong id="btWins">—</strong></div><div class="metric card"><span>Losses</span><strong id="btLosses">—</strong></div><div class="metric card"><span>Win Rate</span><strong id="btWinRate">—</strong></div><div class="metric card"><span>Net P/L (model)</span><strong id="btPnl">—</strong></div><div class="metric card"><span>Max Losing Streak</span><strong id="btMaxLoss">—</strong></div></div>
+<div class="split"><div class="card"><div class="section-title"><h2>Equity Curve</h2><span id="equityLabel">—</span></div><canvas id="equityCanvas" width="900" height="280"></canvas></div><div class="card"><div class="section-title"><h2>Backtest Notes</h2></div><ul class="notes"><li>MATCH wins when the next tick's last digit equals the selected digit.</li><li>DIFFERS wins when the next tick's last digit is not the selected digit.</li><li>The model uses a one-tick horizon and the live ranking logic.</li><li>Model P/L is simplified and does not represent actual Deriv payout.</li><li>Past performance does not guarantee future performance.</li></ul></div></div>
+<div class="card"><div class="section-title"><h2>Backtest Signal Log</h2><button id="clearBtBtn" class="ghost small">Clear</button></div><div class="table-wrap"><table><thead><tr><th>#</th><th>Type</th><th>Digit</th><th>Score</th><th>Actual</th><th>Result</th><th>Equity</th></tr></thead><tbody id="btBody"></tbody></table></div></div>
+</section>
+<section id="performance" class="tab-panel">
+<div class="card"><div class="section-title"><h2>Performance Dashboard</h2><button id="resetPerfBtn" class="ghost small">Reset Saved Results</button></div>
+<div class="metric-grid"><div class="metric card"><span>Total Backtests</span><strong id="perfRuns">0</strong></div><div class="metric card"><span>Total Signals</span><strong id="perfSignals">0</strong></div><div class="metric card"><span>Overall Wins</span><strong id="perfWins">0</strong></div><div class="metric card"><span>Overall Win Rate</span><strong id="perfRate">—</strong></div><div class="metric card"><span>Best Run</span><strong id="perfBest">—</strong></div><div class="metric card"><span>Worst Run</span><strong id="perfWorst">—</strong></div></div></div>
+<div class="split"><div class="card"><div class="section-title"><h2>Latest Run Breakdown</h2></div><div class="diag-list"><div><span>Market</span><b id="perfMarket">—</b></div><div><span>Contract type</span><b id="perfType">—</b></div><div><span>Threshold</span><b id="perfThreshold">—</b></div><div><span>Signals</span><b id="perfLatestSignals">—</b></div><div><span>Win rate</span><b id="perfLatestRate">—</b></div></div></div><div class="card"><div class="section-title"><h2>Risk Review</h2></div><div id="riskReview" class="risk-box">Run a backtest to generate a risk review.</div></div></div>
+<div class="card"><div class="section-title"><h2>Saved Backtest Runs</h2></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Market</th><th>Type</th><th>Window</th><th>Threshold</th><th>Signals</th><th>Win Rate</th><th>Model P/L</th></tr></thead><tbody id="runsBody"></tbody></table></div></div>
+</section>
+<section class="card disclaimer"><h2>Important</h2><p>DigitScope V2 is an educational/statistical analysis tool. It does not know the future, guarantee the next tick, or guarantee profitable trading. Backtesting can differ from live results. Actual Deriv contract payouts and rules are not modeled by the simplified P/L calculation.</p></section>
+</main><footer>DigitScope V2 • Public market data only • No account credentials stored</footer>
+<script src="app.js"></script>
+</body></html>
