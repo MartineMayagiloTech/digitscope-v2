@@ -5,7 +5,45 @@ function digit(q){const s=String(q).replace(/[^0-9]/g,"");return Number(s.at(-1)
 function count(ds){const c=Array(10).fill(0);ds.forEach(d=>c[d]++);return c}
 function ent(c,n){return n?-c.reduce((a,x)=>x?a+(x/n)*Math.log2(x/n):a,0):0}
 function streak(ds){if(!ds.length)return{d:null,n:0,long:0};let n=1;for(let i=1;i<ds.length&&ds[i]===ds[0];i++)n++;let run=1,long=1;for(let i=1;i<ds.length;i++){run=ds[i]===ds[i-1]?run+1:1;long=Math.max(long,run)}return{d:ds[0],n,long}}
-function analyze(ds){const n=ds.length;if(n<30)return null;const c=count(ds),r=ds.slice(0,Math.min(50,n)),rc=count(r),st=streak(ds);const score=c.map((x,d)=>.55*x/n+.30*rc[d]/r.length+(r.includes(d)?(r.length-1-r.indexOf(d))/(r.length*8):0)-(st.d===d?Math.min(.15,st.n*.02):0));const ma=score.indexOf(Math.max(...score)),di=score.indexOf(Math.min(...score)),e=ent(c,n),bal=Math.max(0,100-Math.round((Math.max(...c)-Math.min(...c))/n*1000));return{c,ma,di,ms:Math.max(0,Math.min(99,Math.round(50+(score[ma]-.1)*300))),ds:Math.max(0,Math.min(99,Math.round(50+(.1-score[di])*300))),mf:c[ma]/n,df:c[di]/n,e,bal,q:Math.max(0,Math.min(100,Math.round((100-Math.abs(3.321928-e)*28)*.65+bal*.35))),st}}
+function analyze(ds){const n=ds.length;if(n<30)return null;const c=count(ds),r=ds.slice(0,Math.min(50,n)),rc=count(r),st=streak(ds);const score=c.map((x,d)=>.55*x/n+.30*rc[d]/r.length+(r.includes(d)?(r.length-1-r.indexOf(d))/(r.length*8):0)-(st.d===d?Math.min(.15,st.n*.02):0));const ma=score.indexOf(Math.max(...score)),di=score.indexOf(Math.min(...score)),e=ent(c,n),bal=Math.max(0,100-Math.round((Math.max(...c)-Math.min(...c))/n*1000));return{c,ma,di,ms:Math.max(0,Math.min(99,Math.round(50+(score[ma]-.1)*300))),ds:Math.max(0,Math.min(99,Math.round(50+(.1-score[di])*300))),mf:c[ma]/n,df:c[di]/n,e,bal,q:Math.max(0,Math.min(100,Math.round((100-Math.abs(3.321928-e)*28)*.65+bal*.35))),st}}function decision(a, threshold){
+
+    if(!a) return null;
+
+    if(a.ms >= threshold && a.ms > a.ds){
+
+        return{
+            action:"BUY MATCHES",
+            digit:a.ma,
+            confidence:a.ms,
+            color:"green"
+        };
+
+    }
+
+    if(a.ds >= threshold && a.ds > a.ms){
+
+        return{
+            action:"BUY DIFFERS",
+            digit:a.di,
+            confidence:a.ds,
+            color:"red"
+        };
+
+    }
+
+    return{
+
+        action:"WAIT",
+
+        digit:"-",
+
+        confidence:0,
+
+        color:"gray"
+
+    };
+
+}
 function status(on,t){$("liveStatus").textContent="● "+t;$("liveStatus").className="status "+(on?"online":"offline");$("connectBtn").disabled=on;$("disconnectBtn").disabled=!on}
 function badge(el,s,t){el.textContent=s>=t?"QUALIFIED":"WAIT";el.className="badge "+(s>=t?"good":s>=t-5?"warn":"neutral")}
 function bars(c,n){const m=Math.max(...c,1);$("digitBars").innerHTML=c.map((x,d)=>`<div class="bar-wrap"><span class="bar-pct">${n?(x/n*100).toFixed(1):0}%</span><div class="bar" style="height:${Math.max(3,x/m*135)}px"></div><span class="bar-label">${d}</span></div>`).join("")}
