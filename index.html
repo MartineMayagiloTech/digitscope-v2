@@ -22,6 +22,28 @@
 <div class="signal-grid">
 <div class="signal-card match"><div class="signal-head"><div><small>PRIMARY SETUP</small><h2>MATCH</h2></div><span id="matchBadge" class="badge neutral">WAIT</span></div><div class="signal-digit" id="matchDigit">—</div><div class="signal-stat"><span>Model score</span><b id="matchScore">—</b></div><div class="signal-stat"><span>Observed frequency</span><b id="matchFreq">—</b></div><div class="signal-stat"><span>Current streak</span><b id="matchStreak">—</b></div></div>
 <div class="signal-card differs"><div class="signal-head"><div><small>PRIMARY SETUP</small><h2>DIFFERS</h2></div><span id="diffBadge" class="badge neutral">WAIT</span></div><div class="signal-digit" id="diffDigit">—</div><div class="signal-stat"><span>Model score</span><b id="diffScore">—</b></div><div class="signal-stat"><span>Observed frequency</span><b id="diffFreq">—</b></div><div class="signal-stat"><span>Current streak</span><b id="diffStreak">—</b></div></div>
+</div><div class="card decision-card">
+
+    <div class="section-title">
+        <h2>Signal Decision</h2>
+    </div>
+
+    <div id="signalAction" class="decision-action">
+        WAIT
+    </div>
+
+    <div class="decision-info">
+        <div>
+            <span>Recommended Digit</span>
+            <strong id="signalDigit">-</strong>
+        </div>
+
+        <div>
+            <span>Confidence</span>
+            <strong id="signalConfidence">0%</strong>
+        </div>
+    </div>
+
 </div>
 <div class="card"><div class="section-title"><h2>Digit Distribution</h2><span id="distributionLabel">0 ticks</span></div><div id="digitBars" class="digit-bars"></div></div>
 <div class="split"><div class="card"><div class="section-title"><h2>Recent Digits</h2><span>Newest → oldest</span></div><div id="recentDigits" class="digit-strip"></div></div>
