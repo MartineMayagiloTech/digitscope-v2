@@ -40,13 +40,14 @@ pre{white-space:pre-wrap;background:var(--card);padding:10px;border-radius:10px;
 .v{display:none}.v.on{display:block}
 @media(max-width:480px){.big{font-size:46px}}
 @media(prefers-reduced-motion:no-preference){.bars span{transition:height .2s}}
+.sig{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;background:var(--card)}.gauge{position:relative;height:10px;background:#0a1712;border-radius:8px;margin:8px 0}.gauge i{display:block;height:100%;background:var(--ac);border-radius:8px}.gauge b{position:absolute;top:-3px;width:2px;height:16px;background:var(--warn)}
 </style></head><body>
 <header><div><h1>Digit<b>Scope</b> AI Pro</h1><div class="sub">Deriv Synthetic Indices — Live Digit Analysis &amp; Paper Trading Lab</div></div><div id="st" class="pill"><i></i><span>Idle</span></div></header>
 <div class="bar">
 <select id="sym" aria-label="Market"></select>
 <select id="mode" aria-label="Tick collection mode"><option value="hist">History + live</option><option value="live">Live only</option></select>
 <button id="go" class="pri">Start</button><button id="clr">Clear</button>
-<div class="seg" id="win" role="group" aria-label="Analysis window"><button data-w="100">100</button><button data-w="500">500</button><button data-w="1000">1000</button></div>
+<select id="win" aria-label="Timeframe (ticks)"></select>
 </div>
 <nav id="nav"></nav>
 <main>
@@ -57,6 +58,12 @@ pre{white-space:pre-wrap;background:var(--card);padding:10px;border-radius:10px;
 <div class="card" id="sig"></div>
 <div class="card"><h2>Paper trading</h2><div id="pdash"></div></div>
 </div></section>
+
+<section class="v" id="v-scan"><div class="card"><h2>Matrix Scanner</h2>
+<div class="row"><div><label>Volatility index</label><select id="sc-sym"></select></div><div><label>Timeframe</label><select id="sc-win"></select></div><div><label>Trade type</label><select id="sc-type"><option value="md">Matches / Differs</option><option value="eo">Even / Odd</option><option value="ou">Over / Under</option></select></div></div>
+<button id="sc-go" class="pri" style="width:100%">Start matrix scan</button>
+<canvas id="mx" height="150" style="width:100%;margin-top:10px;background:#04100b;border-radius:12px" aria-label="Matrix animation of the real tick digits"></canvas>
+<div class="gauge"><i id="sc-bar" style="width:0"></i></div><div class="sm mut" id="sc-msg">Idle. Press Start above so ticks load, then run the scan.</div><div id="sc-out"></div></div></section>
 
 <section class="v" id="v-dig">
 <div class="card"><div class="row">
@@ -96,7 +103,7 @@ pre{white-space:pre-wrap;background:var(--card);padding:10px;border-radius:10px;
 "use strict";
 const $=id=>document.getElementById(id);
 const MK=[["1HZ10V","Volatility 10 (1s)"],["1HZ15V","Volatility 15 (1s)"],["1HZ25V","Volatility 25 (1s)"],["1HZ30V","Volatility 30 (1s)"],["1HZ50V","Volatility 50 (1s)"],["1HZ75V","Volatility 75 (1s)"],["1HZ90V","Volatility 90 (1s)"],["1HZ100V","Volatility 100 (1s)"],["R_10","Volatility 10"],["R_25","Volatility 25"],["R_50","Volatility 50"],["R_75","Volatility 75"],["R_100","Volatility 100"]];
-const VIEWS=[["dash","Dashboard"],["dig","Digits"],["lab","Prediction & Backtest"],["paper","Paper Trading"],["comp","Bot Companion"],["set","Settings"]];
+const VIEWS=[["dash","Dashboard"],["scan","Matrix Scanner"],["dig","Digits"],["lab","Prediction & Backtest"],["paper","Paper Trading"],["comp","Bot Companion"],["set","Settings"]];
 const EP=["wss://api.derivws.com/trading/v1/options/ws/public","wss://ws.derivws.com/websockets/v3?app_id=1089","wss://ws.binaryws.com/websockets/v3?app_id=1089"];
 const PIP={"1HZ10V":2,"1HZ15V":3,"1HZ25V":2,"1HZ30V":3,"1HZ50V":2,"1HZ75V":2,"1HZ90V":3,"1HZ100V":2,R_10:3,R_25:3,R_50:4,R_75:4,R_100:2};
 const CT_LABEL={matches:"Matches",differs:"Differs",even:"Even",odd:"Odd",over:"Over",under:"Under"};
@@ -232,20 +239,56 @@ const s=[1,2,2,3,7,7,7,0,9,7];const c=freq(s);ok("freq total",c.reduce((a,b)=>a+
 const a=analyse("matches",7,0,s);ok("matches count",a.k==4&&Math.abs(a.obs-.4)<1e-9&&a.base==.1);ok("current run",a.st.yes==1&&a.st.no==0);
 ok("even base .5",rule("even",0,0).base==.5);ok("over 4 base .5",rule("over",0,4).base==.5);ok("under 0 base 0",rule("under",0,0).base==0);
 const w=wilson(50,100);ok("wilson(50/100)≈.404–.596",Math.abs(w[0]-.4038)<.002&&Math.abs(w[1]-.5962)<.002);
-const rnd=Array.from({length:600},(_,i)=>(i*7+3*(i%5))%10),b=backtest("even",0,0,rnd);ok("backtest counts add up",b.cm.tp+b.cm.fp+b.cm.fn+b.cm.tn==b.n&&b.n==500);
+ok("erfc two-sided p at z=1.96 is about .05",Math.abs(erfc(1.96/Math.SQRT2)-.05)<.001);const rnd=Array.from({length:600},(_,i)=>(i*7+3*(i%5))%10),b=backtest("even",0,0,rnd);ok("backtest counts add up",b.cm.tp+b.cm.fp+b.cm.fn+b.cm.tn==b.n&&b.n==500);
 const seq=[0,1,2,3,4,5,6,7,8,9,0,1];ok("lab predictions use holdout only",predLab(Array.from({length:300},(_,i)=>i%10)).m==90);
 return t.join("\n")}
 
+/* ---------- matrix scanner ---------- */
+const SC={on:false};S.scanType="md";
+function erfc(x){const t=1/(1+.3275911*Math.abs(x)),y=t*(.254829592+t*(-.284496736+t*(1.421413741+t*(-1.453152027+t*1.061405429))))*Math.exp(-x*x);return x>=0?y:2-y}
+function scanSigs(T,a){const c=freq(a),n=a.length;
+if(T=="md"){const mx=c.indexOf(Math.max(...c)),mn=c.indexOf(Math.min(...c));return[{lbl:"Matches",dg:mx,f:d=>d==mx,base:.1},{lbl:"Differs",dg:mn,f:d=>d!=mn,base:.9}]}
+if(T=="eo"){const e=a.filter(d=>d%2==0).length,ev=e*2>=n;return[{lbl:ev?"Even":"Odd",dg:null,f:d=>(d%2==0)==ev,base:.5}]}
+const r=rule("over",0,S.thr),ov=a.filter(r.f).length,un=a.filter(d=>d<S.thr).length,o=ov>=un,q=rule(o?"over":"under",0,S.thr);return[{lbl:(o?"Over ":"Under ")+S.thr,dg:null,f:q.f,base:q.base}]}
+function scan(){if(SC.on)return;const a=digs(S.win),m=$("sc-msg");
+if(a.length<S.win){m.textContent="Need "+S.win+" ticks (have "+a.length+"). Press Start above and wait, or pick a shorter timeframe.";return}
+SC.on=true;$("sc-out").innerHTML="";const cv=$("mx"),cx=cv.getContext("2d");cv.width=cv.clientWidth||300;
+const cols=Math.floor(cv.width/16),rows=Math.ceil(cv.height/16),ys=Array.from({length:cols},()=>Math.random()*rows|0),t0=performance.now(),D=5000;
+const ph=["Reading tick window","Counting digit distribution","Testing each digit against 10%","Checking the rule on earlier ticks","Scoring"];
+const step=t=>{const p=Math.min(1,(t-t0)/D);cx.fillStyle="rgba(4,16,11,.2)";cx.fillRect(0,0,cv.width,cv.height);cx.font="14px monospace";
+for(let i=0;i<cols;i++){ys[i]=(ys[i]+1)%rows;cx.fillStyle=i/cols<p?"#35e08a":"#1f6b48";cx.fillText(a[(i*13+ys[i]*7+(t/120|0))%a.length],i*16,ys[i]*16+14)}
+$("sc-bar").style.width=p*100+"%";m.textContent="Scanning "+Math.round(p*100)+"% — "+ph[Math.min(4,p*5|0)];
+if(p<1)requestAnimationFrame(step);else{SC.on=false;m.textContent="Scan complete (100%) on "+a.length+" real ticks.";scanResult(a)}};
+requestAnimationFrame(step)}
+function scanResult(a){const T=S.scanType,n=a.length,c=freq(a),sg=scanSigs(T,a),d=S.ticks.map(t=>t.d);let p;
+if(T=="md"){const z=(Math.max(...c)-n*.1)/Math.sqrt(n*.09);p=Math.min(1,10*.5*erfc(z/Math.SQRT2))}
+else{const b=sg[0].base,k=a.filter(sg[0].f).length,z=b>0&&b<1?Math.abs(k-n*b)/Math.sqrt(n*b*(1-b)):0;p=Math.min(1,erfc(z/Math.SQRT2))}
+const tag=(T=="md"?"Matches / Differs":T=="eo"?"Even / Odd":"Over / Under");
+$("sc-out").innerHTML=`<div class="sm mut" style="margin-top:8px">${tag} · ${(MK.find(x=>x[0]==S.sym)||[0,S.sym])[1]} · ${n} ticks · ${new Date().toLocaleTimeString()}${S.demo?" · DEMO DATA":""}</div>`+
+sg.map((s,k)=>{let h=0,m=0;for(let i=n;i<d.length;i++){if(scanSigs(T,d.slice(i-n,i))[k].f(d[i]))h++;m++}
+const r=m?h/m:0,ci=wilson(h,m),tested=m>=50,inside=ci[0]<=s.base&&s.base<=ci[1];
+return`<div class="sig"><div style="display:flex;gap:14px;align-items:center"><div class="big" style="font-size:42px">${s.dg!==null?s.dg:s.lbl.split(" ")[0]}</div><div><b>${s.lbl.toUpperCase()} candidate</b>${s.dg!==null?"":""}<div class="sm mut">Chosen from the ${n}-tick window. Descriptive only.</div></div></div>
+<div class="kv"><span>Chance rate for this outcome</span><span>${pc(s.base,0)}</span></div>
+<div class="kv"><span>Rule hit rate on earlier ticks</span><span>${tested?pc(r)+" ("+pc(ci[0])+"–"+pc(ci[1])+", n="+m+")":"needs more history"}</span></div>
+${tested?`<div class="gauge"><i style="width:${r*100}%"></i><b style="left:${s.base*100}%"></b></div><div class="sm mut">Bar = measured hit rate. Yellow line = chance rate.</div>`:""}
+<div class="kv"><span>Confidence in next tick</span><span>Not established</span></div>
+<div class="sm mut">${tested?(inside?"The rule performed no better than chance on earlier ticks.":"The rule differed from chance on this history. Re-test on new ticks before reading anything into it."):"Load more ticks (use a shorter timeframe) to test this rule."}</div></div>`}).join("")+
+`<div class="kv" style="margin-top:8px"><span>Distribution vs uniform (adjusted p-value)</span><span>${p.toFixed(3)}</span></div>
+<div class="note">${p>=.05?"No meaningful deviation from random in this window.":"This window deviates from uniform, but with 10 digits and repeated scans that happens by chance. It does not predict the next tick."} Digits are drawn independently, so a scan cannot know the next digit.</div>`}
+
 /* ---------- init ---------- */
 function init(){load();
-$("sym").innerHTML=MK.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join("");$("sym").value=S.sym;$("mode").value=S.mode;
+const mo=MK.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join("");$("sym").innerHTML=mo;$("sc-sym").innerHTML=mo;$("sym").value=S.sym;$("sc-sym").value=S.sym;
+const wo=[50,100,200,300,500,1000].map(w=>`<option value="${w}">${w} ticks</option>`).join("");$("win").innerHTML=wo;$("sc-win").innerHTML=wo;$("sc-type").value=S.scanType;$("mode").value=S.mode;
 const dopt=(id,f)=>{$(id).innerHTML=[0,1,2,3,4,5,6,7,8,9].map(d=>`<option>${d}</option>`).join("");$(id).value=S[f]};dopt("tgt","tgt");dopt("thr","thr");$("ct").value=S.ct;
 $("nav").innerHTML=VIEWS.map(v=>`<button data-v="${v[0]}">${v[1]}</button>`).join("");
 const show=v=>{S.view=v;document.querySelectorAll(".v").forEach(e=>e.classList.toggle("on",e.id=="v-"+v));document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v==v));render()};
 $("nav").onclick=e=>e.target.dataset.v&&show(e.target.dataset.v);
-const setWin=w=>{S.win=w;document.querySelectorAll("#win button").forEach(b=>b.classList.toggle("on",+b.dataset.w==w));save();render()};
-$("win").onclick=e=>e.target.dataset.w&&setWin(+e.target.dataset.w);
-$("sym").onchange=e=>{S.sym=e.target.value;S.ticks=[];S.seen=new Set();save();if(S.running)start();else render()};
+const setWin=w=>{S.win=w;$("win").value=w;$("sc-win").value=w;save();render()};
+$("win").onchange=e=>setWin(+e.target.value);$("sc-win").onchange=e=>setWin(+e.target.value);
+$("sc-type").onchange=e=>{S.scanType=e.target.value;$("sc-out").innerHTML=""};$("sc-go").onclick=scan;
+const chgSym=v=>{S.sym=v;$("sym").value=v;$("sc-sym").value=v;S.ticks=[];S.seen=new Set();$("sc-out").innerHTML="";save();if(S.running)start();else render()};
+$("sym").onchange=e=>chgSym(e.target.value);$("sc-sym").onchange=e=>chgSym(e.target.value);
 $("mode").onchange=e=>{S.mode=e.target.value;save()};
 ["ct","tgt","thr"].forEach(id=>$(id).onchange=e=>{S[id]=id=="ct"?e.target.value:+e.target.value;save();render()});
 $("go").onclick=()=>{if(S.running){stop();setStatus("idle");$("go").textContent="Start";render()}else start()};
