@@ -97,7 +97,8 @@ pre{white-space:pre-wrap;background:var(--card);padding:10px;border-radius:10px;
 const $=id=>document.getElementById(id);
 const MK=[["1HZ10V","Volatility 10 (1s)"],["1HZ15V","Volatility 15 (1s)"],["1HZ25V","Volatility 25 (1s)"],["1HZ30V","Volatility 30 (1s)"],["1HZ50V","Volatility 50 (1s)"],["1HZ75V","Volatility 75 (1s)"],["1HZ90V","Volatility 90 (1s)"],["1HZ100V","Volatility 100 (1s)"],["R_10","Volatility 10"],["R_25","Volatility 25"],["R_50","Volatility 50"],["R_75","Volatility 75"],["R_100","Volatility 100"]];
 const VIEWS=[["dash","Dashboard"],["dig","Digits"],["lab","Prediction & Backtest"],["paper","Paper Trading"],["comp","Bot Companion"],["set","Settings"]];
-const EP=["ws.derivws.com","ws.binaryws.com","frontend.binaryws.com"];
+const EP=["wss://api.derivws.com/trading/v1/options/ws/public","wss://ws.derivws.com/websockets/v3?app_id=1089","wss://ws.binaryws.com/websockets/v3?app_id=1089"];
+const PIP={"1HZ10V":2,"1HZ15V":3,"1HZ25V":2,"1HZ30V":3,"1HZ50V":2,"1HZ75V":2,"1HZ90V":3,"1HZ100V":2,R_10:3,R_25:3,R_50:4,R_75:4,R_100:2};
 const CT_LABEL={matches:"Matches",differs:"Differs",even:"Even",odd:"Odd",over:"Over",under:"Under"};
 const S={sym:"1HZ100V",pip:2,ticks:[],seen:new Set(),win:100,tgt:7,thr:4,ct:"matches",mode:"hist",demo:false,ws:null,running:false,retry:0,timer:null,view:"dash",obs:[],
 P:{start:1000,bal:1000,stake:1,ct:"differs",tgt:7,thr:4,max:100,sl:20,sp:20,pay:9.5,rule:"every",on:false,arm:false,pend:null,trades:[],why:""}};
@@ -141,17 +142,17 @@ function setStatus(k,msg){const el=$("st");el.className="pill "+({live:"live",er
 el.lastChild.textContent=({live:"Live — Deriv connected",err:"Error: "+(msg||""),wait:msg||"Connecting…",demo:"DEMO — synthetic data",idle:"Idle"})[k];S.stat=k;S.msg=msg}
 function stop(){S.running=false;clearTimeout(S.timer);const w=S.ws;S.ws=null;if(w)try{w.close()}catch(e){}}
 function start(){stop();S.running=true;S.retry=0;S.demo=$("demo").checked;S.demo?demo():connect();$("go").textContent="Stop"}
-function connect(){if(!S.running)return;setStatus("wait","Connecting…");let ws;const host=EP[S.retry%EP.length];
-try{ws=new WebSocket("wss://"+host+"/websockets/v3?app_id=1089")}catch(e){return setStatus("err","WebSocket unsupported")}
+function connect(){if(!S.running)return;setStatus("wait","Connecting…");let ws;const url=EP[S.retry%EP.length],host=url.split("/")[2];
+try{ws=new WebSocket(url)}catch(e){return setStatus("err","WebSocket unsupported")}
 S.ws=ws;
-ws.onopen=()=>{S.retry=0;S.opened=1;ws.send(JSON.stringify({ticks_history:S.sym,adjust_start_time:1,count:S.mode=="hist"?1000:1,end:"latest",style:"ticks",subscribe:1}))};
+ws.onopen=()=>{S.retry=0;S.opened=1;S.fb=0;ws.send(JSON.stringify({ticks_history:S.sym,adjust_start_time:1,count:S.mode=="hist"?1000:1,end:"latest",style:"ticks",subscribe:1}))};
 ws.onmessage=m=>{let d;try{d=JSON.parse(m.data)}catch(e){return}
-if(d.error)return setStatus("err",d.error.message);
-if(d.msg_type=="history"&&d.echo_req.ticks_history==S.sym){S.pip=Number.isInteger(d.pip_size)?d.pip_size:S.pip;S.ticks=[];S.seen=new Set();
-const p=d.history.prices,t=d.history.times;for(let i=0;i<p.length;i++)addTick(t[i],p[i],false);setStatus("live");sched()}
-else if(d.msg_type=="tick"&&d.tick&&d.tick.symbol==S.sym){if(Number.isInteger(d.tick.pip_size))S.pip=d.tick.pip_size;addTick(d.tick.epoch,d.tick.quote,true);setStatus("live");sched()}};
+if(d.error){setStatus("err",(d.error.message||d.error.code||"Server error")+" ("+host+")");if(!S.fb&&ws.readyState==1){S.fb=1;ws.send(JSON.stringify({ticks:S.sym,subscribe:1}))}return}
+if(d.msg_type=="history"){S.pip=Number.isInteger(d.pip_size)?d.pip_size:(PIP[S.sym]??S.pip);S.ticks=[];S.seen=new Set();
+const hh=d.history||{},p=hh.prices||[],t=hh.times||[];for(let i=0;i<p.length;i++)addTick(t[i],p[i],false);setStatus("live");sched()}
+else if(d.msg_type=="tick"&&d.tick&&[d.tick.symbol,d.tick.underlying_symbol,S.sym].find(x=>x)==S.sym){if(Number.isInteger(d.tick.pip_size))S.pip=d.tick.pip_size;else if(!S.ticks.length&&PIP[S.sym]!==undefined)S.pip=PIP[S.sym];addTick(d.tick.epoch,d.tick.quote,true);setStatus("live");sched()}};
 ws.onerror=()=>{S.msg="Connection failed. Check internet or try again."};
-ws.onclose=()=>{if(S.ws!==ws||!S.running)return;setStatus(S.retry>=3?"err":"wait",S.retry>=3?"Cannot reach Deriv from this page (tried "+host+", attempt "+(S.retry+1)+"). Host the file over https or use Demo mode.":"Connecting to "+host+" (attempt "+(S.retry+1)+")…");S.timer=setTimeout(connect,Math.min(15000,1000*2**S.retry++))}}
+ws.onclose=()=>{if(S.ws!==ws||!S.running)return;setStatus(S.retry>=3?"err":"wait",S.retry>=3?"Cannot reach Deriv from this page (tried "+host+", attempt "+(S.retry+1)+"). Try another network, or use Demo mode.":"Connecting to "+host+" (attempt "+(S.retry+1)+")…");S.timer=setTimeout(connect,Math.min(15000,1000*2**S.retry++))}}
 function demo(){setStatus("demo");S.pip=2;S.ticks=[];S.seen=new Set();let e=Math.floor(Date.now()/1000),q=1000;
 const step=()=>{if(!S.running||!S.demo)return;q+=(Math.random()-.5)*2;addTick(++e,q,true);sched();S.timer=setTimeout(step,1000)};
 for(let i=0;i<1000;i++){q+=(Math.random()-.5)*2;addTick(++e,q,false)}step()}
