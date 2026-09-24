@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DigitScope AI Pro</title>
+<style>
+:root{--bg:#06110d;--card:#0c1e17;--card2:#10281f;--line:#1f4232;--tx:#e6f5ec;--mut:#84a898;--ac:#35e08a;--ac2:#b6f542;--bad:#ff7a6b;--warn:#f2c14e}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 420px at 85% -10%,#12452f,transparent),var(--bg);color:var(--tx);font:15px/1.45 system-ui,Roboto,sans-serif;min-height:100vh}
+header{padding:14px 14px 4px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+h1{margin:0;font-size:22px;letter-spacing:.2px}h1 b{color:var(--ac)}
+.sub{color:var(--mut);font-size:12.5px}
+.pill{padding:4px 10px;border-radius:99px;border:1px solid var(--line);font-size:12.5px;background:var(--card)}
+.pill i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mut);margin-right:6px}
+.pill.live i{background:var(--ac)}.pill.err i{background:var(--bad)}.pill.wait i{background:var(--warn)}.pill.demo i{background:#8ab4ff}
+.bar{display:flex;gap:8px;flex-wrap:wrap;padding:8px 14px;position:sticky;top:0;background:#06110dee;backdrop-filter:blur(6px);z-index:5;border-bottom:1px solid var(--line)}
+select,input,button{font:inherit;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:40px}
+input{width:100%}button{cursor:pointer}button:hover{border-color:var(--ac)}
+button.pri{background:var(--ac);color:#04160d;border-color:var(--ac);font-weight:700}
+:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+.seg{display:flex;gap:0}.seg button{border-radius:0}.seg button:first-child{border-radius:10px 0 0 10px}.seg button:last-child{border-radius:0 10px 10px 0}.seg .on{background:var(--ac);color:#04160d;font-weight:700}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 14px}nav button{white-space:nowrap;border-radius:99px}nav .on{background:var(--ac);color:#04160d;font-weight:700}
+main{padding:0 14px 40px;max-width:1100px;margin:auto}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.card{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:14px}
+.card h2{margin:0 0 8px;font-size:15px}
+.big{font-size:56px;font-weight:800;line-height:1;color:var(--ac)}.price{font-size:26px;font-weight:700}
+.mut{color:var(--mut)}.sm{font-size:12.5px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th,td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
+.tw{overflow-x:auto;max-height:300px;overflow-y:auto}
+.bars{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;align-items:end;height:140px;position:relative}
+.bars div{display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center;font-size:11px;color:var(--mut)}
+.bars span{display:block;background:#2b6b4d;border-radius:5px 5px 0 0;min-height:2px}.bars .hi span{background:var(--ac)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}.chips b{min-width:28px;text-align:center;padding:3px 0;border-radius:7px;background:var(--card);border:1px solid var(--line)}
+.chips b.t{background:#1b5a3f;border-color:#2f8a63}
+.note{border-left:3px solid var(--warn);padding:6px 10px;background:#f2c14e12;border-radius:0 8px 8px 0;font-size:12.5px;color:#e9d9a8;margin:8px 0}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0}
+label{font-size:12.5px;color:var(--mut);display:block}
+.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line)}
+pre{white-space:pre-wrap;background:var(--card);padding:10px;border-radius:10px;border:1px solid var(--line);font-size:12.5px}
+.v{display:none}.v.on{display:block}
+@media(max-width:480px){.big{font-size:46px}}
+@media(prefers-reduced-motion:no-preference){.bars span{transition:height .2s}}
+</style></head><body>
+<header><div><h1>Digit<b>Scope</b> AI Pro</h1><div class="sub">Deriv Synthetic Indices — Live Digit Analysis &amp; Paper Trading Lab</div></div><div id="st" class="pill"><i></i><span>Idle</span></div></header>
+<div class="bar">
+<select id="sym" aria-label="Market"></select>
+<select id="mode" aria-label="Tick collection mode"><option value="hist">History + live</option><option value="live">Live only</option></select>
+<button id="go" class="pri">Start</button><button id="clr">Clear</button>
+<div class="seg" id="win" role="group" aria-label="Analysis window"><button data-w="100">100</button><button data-w="500">500</button><button data-w="1000">1000</button></div>
+</div>
+<nav id="nav"></nav>
+<main>
+<section class="v" id="v-dash">
+<div class="grid">
+<div class="card"><h2 id="tk-sym">—</h2><div class="sub" id="tk-note">Press Start to connect.</div><div style="display:flex;gap:18px;align-items:center;margin-top:8px"><div class="big" id="tk-d">–</div><div><div class="price" id="tk-p">–</div><div class="mut sm" id="tk-t">–</div></div></div><h2 style="margin-top:12px">Last 20 digits</h2><div class="chips" id="last20"></div></div>
+<div class="card"><h2>Digit frequency <span class="mut sm" id="fq-n"></span></h2><div class="bars" id="bars"></div><div class="sm mut" style="margin-top:6px">Expected under a uniform model: 10% per digit.</div></div>
+<div class="card" id="sig"></div>
+<div class="card"><h2>Paper trading</h2><div id="pdash"></div></div>
+</div></section>
+
+<section class="v" id="v-dig">
+<div class="card"><div class="row">
+<div><label>Contract</label><select id="ct"><option value="matches">Matches</option><option value="differs">Differs</option><option value="even">Even</option><option value="odd">Odd</option><option value="over">Over</option><option value="under">Under</option></select></div>
+<div><label>Target digit</label><select id="tgt"></select></div>
+<div><label>Over/Under threshold</label><select id="thr"></select></div></div>
+<div id="dig-out"></div></div>
+<div class="card" style="margin-top:12px"><h2>Frequency table</h2><div class="tw"><table id="ftab"></table></div></div>
+</section>
+
+<section class="v" id="v-lab">
+<div class="card"><h2>Prediction Lab — chronological holdout</h2>
+<p class="sm mut">First 70% of collected ticks = training period. Each holdout tick is predicted using only ticks before it. Task: guess the next digit exactly (chance = 10%).</p><div id="lab-out"></div></div>
+<div class="card" style="margin-top:12px"><h2>Backtest Lab</h2>
+<p class="sm mut">Uses the contract, target and threshold selected in Digits. Rule: predict “outcome occurs” if its frequency in the previous 100 ticks is at least its base rate. No future ticks are used.</p><div id="bt-out"></div></div>
+</section>
+
+<section class="v" id="v-paper"><div class="card"><h2>Paper trading (virtual money only)</h2>
+<div class="note">Paper trading results are simulated and do not guarantee real trading profitability. Stake is fixed — never raise stakes to recover losses.</div>
+<div class="row" id="pcfg"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="p-on" class="pri">Start paper session</button><button id="p-arm">Enter on next tick</button><button id="p-reset">Reset</button></div>
+<div id="p-out" style="margin-top:10px"></div></div></section>
+
+<section class="v" id="v-comp"><div class="card"><h2>Deriv Bot companion</h2>
+<div class="sub">Keep this open next to Deriv Bot. It never touches Deriv Bot or places trades.</div>
+<div id="comp-out" style="margin-top:8px"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="c-copy" class="pri">Copy summary</button><button id="c-mark">Log manual review</button></div><div id="c-log" class="sm mut"></div></div></section>
+
+<section class="v" id="v-set"><div class="card"><h2>Settings</h2>
+<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="demo" style="width:auto;min-height:0"> Demo mode (synthetic random digits — NOT market data)</label>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button id="x-ticks">Export ticks CSV</button><button id="x-tr">Export paper trades CSV</button><button id="selftest">Run statistics self-test</button></div>
+<pre id="test-out">Self-test not run.</pre>
+<h2>How it works</h2>
+<p class="sm mut">Data: public Deriv WebSocket (app_id 1089), no token, read-only ticks. Digit = last character of the quote formatted to the market’s own <code>pip_size</code>. Duplicate epochs are ignored; reconnects use backoff and reload history. Stats are descriptive: intervals are 95% Wilson. Deriv’s synthetic indices are designed so each tick is independent, so no score here is a forecast. Deviations across 10 digits are expected by chance alone.</p></div></section>
+</main>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const MK=[["1HZ10V","Volatility 10 (1s)"],["1HZ15V","Volatility 15 (1s)"],["1HZ25V","Volatility 25 (1s)"],["1HZ30V","Volatility 30 (1s)"],["1HZ50V","Volatility 50 (1s)"],["1HZ75V","Volatility 75 (1s)"],["1HZ90V","Volatility 90 (1s)"],["1HZ100V","Volatility 100 (1s)"],["R_10","Volatility 10"],["R_25","Volatility 25"],["R_50","Volatility 50"],["R_75","Volatility 75"],["R_100","Volatility 100"]];
+const VIEWS=[["dash","Dashboard"],["dig","Digits"],["lab","Prediction & Backtest"],["paper","Paper Trading"],["comp","Bot Companion"],["set","Settings"]];
+const EP=["ws.derivws.com","ws.binaryws.com","frontend.binaryws.com"];
+const CT_LABEL={matches:"Matches",differs:"Differs",even:"Even",odd:"Odd",over:"Over",under:"Under"};
+const S={sym:"1HZ100V",pip:2,ticks:[],seen:new Set(),win:100,tgt:7,thr:4,ct:"matches",mode:"hist",demo:false,ws:null,running:false,retry:0,timer:null,view:"dash",obs:[],
+P:{start:1000,bal:1000,stake:1,ct:"differs",tgt:7,thr:4,max:100,sl:20,sp:20,pay:9.5,rule:"every",on:false,arm:false,pend:null,trades:[],why:""}};
+const PK=["start","stake","ct","tgt","thr","max","sl","sp","pay","rule"];
+
+/* ---------- pure statistics ---------- */
+const lastDigit=(q,pip)=>+Number(q).toFixed(pip).slice(-1);
+const freq=a=>{const c=Array(10).fill(0);a.forEach(d=>c[d]++);return c};
+function wilson(k,n){if(!n)return[0,1];const z=1.96,p=k/n,dn=1+z*z/n,c=p+z*z/(2*n),m=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n));return[(c-m)/dn,(c+m)/dn]}
+function rule(ct,t,h){const f=d=>({matches:d==t,differs:d!=t,even:d%2==0,odd:d%2==1,over:d>h,under:d<h})[ct];let b=0;for(let d=0;d<10;d++)if(f(d))b++;return{f,base:b/10}}
+function streaks(res){let v=res[res.length-1],n=0;for(let i=res.length-1;i>=0&&res[i]===v;i--)n++;return{yes:v?n:0,no:v||!res.length?0:n}}
+const pc=(x,dp=1)=>(x*100).toFixed(dp)+"%";
+const digs=n=>S.ticks.slice(-n).map(t=>t.d);
+function analyse(ct,tgt,thr,arr){const r=rule(ct,tgt,thr),res=arr.map(r.f),n=arr.length,k=res.filter(Boolean).length,obs=n?k/n:0,ci=wilson(k,n);
+return{r,res,n,k,obs,ci,base:r.base,st:streaks(res),z:n&&r.base>0&&r.base<1?(obs-r.base)/Math.sqrt(r.base*(1-r.base)/n):0}}
+function verdict(a){if(a.n<100)return["INSUFFICIENT EVIDENCE","Fewer than 100 observations."];
+if(a.base>0&&a.base<1&&a.ci[0]<=a.base&&a.base<=a.ci[1])return["NO MEASURABLE DEVIATION","Observed frequency is consistent with the uniform model."];
+return["DEVIATION FROM UNIFORM (descriptive)","Differs from the uniform rate in this sample. Across many digits/windows this happens by chance and does not forecast the next tick."]}
+
+/* holdout prediction lab */
+function predLab(d){const n=d.length;if(n<200)return null;const cut=Math.floor(n*.7);
+const am=a=>a.indexOf(Math.max(...a));const cnt=Array(10).fill(0),tr=Array.from({length:10},()=>Array(10).fill(1));
+for(let i=0;i<cut;i++){cnt[d[i]]++;if(i)tr[d[i-1]][d[i]]++}
+const M={"Frequency (all past ticks)":0,"Recent 50 ticks":0,"Laplace transition (prev→next)":0};let m=0;
+for(let i=cut;i<n;i++){m++;
+if(am(cnt)==d[i])M["Frequency (all past ticks)"]++;
+if(am(freq(d.slice(i-50,i)))==d[i])M["Recent 50 ticks"]++;
+if(am(tr[d[i-1]])==d[i])M["Laplace transition (prev→next)"]++;
+cnt[d[i]]++;tr[d[i-1]][d[i]]++}
+return{n,cut,m,M}}
+/* walk-forward backtest, no look-ahead */
+function backtest(ct,tgt,thr,d){const r=rule(ct,tgt,thr),W=100,rows=[];const cm={tp:0,fp:0,fn:0,tn:0};
+for(let i=W;i<d.length;i++){const past=d.slice(i-W,i),p=past.filter(r.f).length/W>=r.base,a=r.f(d[i]);
+if(p&&a)cm.tp++;else if(p)cm.fp++;else if(a)cm.fn++;else cm.tn++;rows.push({i,dg:d[i],p,a})}
+const n=rows.length,ok=cm.tp+cm.tn,pos=cm.tp+cm.fn;return{n,ok,cm,rows,maj:n?Math.max(pos,n-pos)/n:0}}
+
+/* ---------- data ---------- */
+function addTick(e,q,live){if(S.seen.has(e))return;S.seen.add(e);const d=lastDigit(q,S.pip);S.ticks.push({e,q:+q,d});
+if(S.ticks.length>2000){S.seen.delete(S.ticks.shift().e)}if(live)paperStep(d)}
+function setStatus(k,msg){const el=$("st");el.className="pill "+({live:"live",err:"err",wait:"wait",demo:"demo"}[k]||"");
+el.lastChild.textContent=({live:"Live — Deriv connected",err:"Error: "+(msg||""),wait:msg||"Connecting…",demo:"DEMO — synthetic data",idle:"Idle"})[k];S.stat=k;S.msg=msg}
+function stop(){S.running=false;clearTimeout(S.timer);const w=S.ws;S.ws=null;if(w)try{w.close()}catch(e){}}
+function start(){stop();S.running=true;S.retry=0;S.demo=$("demo").checked;S.demo?demo():connect();$("go").textContent="Stop"}
+function connect(){if(!S.running)return;setStatus("wait","Connecting…");let ws;const host=EP[S.retry%EP.length];
+try{ws=new WebSocket("wss://"+host+"/websockets/v3?app_id=1089")}catch(e){return setStatus("err","WebSocket unsupported")}
+S.ws=ws;
+ws.onopen=()=>{S.retry=0;S.opened=1;ws.send(JSON.stringify({ticks_history:S.sym,adjust_start_time:1,count:S.mode=="hist"?1000:1,end:"latest",style:"ticks",subscribe:1}))};
+ws.onmessage=m=>{let d;try{d=JSON.parse(m.data)}catch(e){return}
+if(d.error)return setStatus("err",d.error.message);
+if(d.msg_type=="history"&&d.echo_req.ticks_history==S.sym){S.pip=Number.isInteger(d.pip_size)?d.pip_size:S.pip;S.ticks=[];S.seen=new Set();
+const p=d.history.prices,t=d.history.times;for(let i=0;i<p.length;i++)addTick(t[i],p[i],false);setStatus("live");sched()}
+else if(d.msg_type=="tick"&&d.tick&&d.tick.symbol==S.sym){if(Number.isInteger(d.tick.pip_size))S.pip=d.tick.pip_size;addTick(d.tick.epoch,d.tick.quote,true);setStatus("live");sched()}};
+ws.onerror=()=>{S.msg="Connection failed. Check internet or try again."};
+ws.onclose=()=>{if(S.ws!==ws||!S.running)return;setStatus(S.retry>=3?"err":"wait",S.retry>=3?"Cannot reach Deriv from this page (tried "+host+", attempt "+(S.retry+1)+"). Host the file over https or use Demo mode.":"Connecting to "+host+" (attempt "+(S.retry+1)+")…");S.timer=setTimeout(connect,Math.min(15000,1000*2**S.retry++))}}
+function demo(){setStatus("demo");S.pip=2;S.ticks=[];S.seen=new Set();let e=Math.floor(Date.now()/1000),q=1000;
+const step=()=>{if(!S.running||!S.demo)return;q+=(Math.random()-.5)*2;addTick(++e,q,true);sched();S.timer=setTimeout(step,1000)};
+for(let i=0;i<1000;i++){q+=(Math.random()-.5)*2;addTick(++e,q,false)}step()}
+
+/* ---------- paper trading ---------- */
+function pStats(){const T=S.P.trades,w=T.filter(t=>t.win).length,gw=T.filter(t=>t.win).reduce((a,t)=>a+t.pnl,0),gl=-T.filter(t=>!t.win).reduce((a,t)=>a+t.pnl,0);
+let pk=S.P.start,dd=0;T.forEach(t=>{pk=Math.max(pk,t.bal);dd=Math.max(dd,pk-t.bal)});
+return{n:T.length,w,l:T.length-w,wr:T.length?w/T.length:0,net:S.P.bal-S.P.start,dd,pf:gl?gw/gl:null}}
+function paperStep(d){const P=S.P;if(!P.on)return;
+if(P.pend){const win=rule(P.ct,P.tgt,P.thr).f(d),pnl=win?P.pend*P.pay:-P.pend;P.bal+=pnl;P.trades.push({n:P.trades.length+1,t:new Date().toLocaleTimeString(),ct:P.ct,dg:d,win,pnl,bal:P.bal});P.pend=null}
+const s=pStats();
+if(P.trades.length>=P.max)return pStop("Max trades reached");
+if(-s.net>=P.sl)return pStop("Stop-after-loss limit reached");
+if(s.net>=P.sp)return pStop("Stop-after-profit limit reached");
+if(P.bal<P.stake)return pStop("Virtual balance too low");
+if(P.rule=="every"||P.arm){P.pend=P.stake;P.arm=false}}
+function pStop(w){S.P.on=false;S.P.why=w;$("p-on").textContent="Start paper session"}
+
+/* ---------- rendering ---------- */
+let raf=0;function sched(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;render()})}
+function bars(c,n,hi){const mx=Math.max(1,...c);return c.map((v,d)=>`<div class="${d==hi?"hi":""}" title="Digit ${d}: ${v} (${n?pc(v/n):"0%"})">${n?pc(v/n,0):""}<span style="height:${v/mx*100}px"></span>${d}</div>`).join("")}
+function sigHTML(){const a=analyse(S.ct,S.tgt,S.thr,digs(S.win)),[h,ex]=verdict(a),dq=a.n>=100?"Sufficient for descriptive statistics":"Too few ticks";
+const tg=S.ct=="matches"||S.ct=="differs"?"Target digit: "+S.tgt:S.ct=="over"||S.ct=="under"?"Threshold: "+S.thr:"—";
+return`<h2>Digit Analysis Signal</h2><div style="font-weight:800;color:${h.startsWith("INSUFF")||h.startsWith("NO")?"var(--warn)":"var(--ac)"}">ANALYSIS STATUS: ${h}</div>
+<div class="kv"><span>Contract</span><span>${CT_LABEL[S.ct]}</span></div><div class="kv"><span>${tg.split(":")[0]}</span><span>${tg.split(": ")[1]||""}</span></div>
+<div class="kv"><span>Observed frequency</span><span>${a.n?pc(a.obs)+" ("+pc(a.ci[0])+"–"+pc(a.ci[1])+")":"–"}</span></div><div class="kv"><span>Uniform-model rate</span><span>${pc(a.base,0)}</span></div>
+<div class="kv"><span>Sample size</span><span>${a.n} ticks</span></div><div class="kv"><span>Current run</span><span>${a.st.yes?a.st.yes+" in a row":a.st.no+" not occurring"}</span></div>
+<div class="kv"><span>Data quality</span><span>${dq}</span></div><div class="kv"><span>Forecast</span><span>Not reliably established</span></div>
+<p class="sm mut">${ex} Action: review the statistics manually. Past frequency and streaks do not guarantee the next tick.</p>`}
+function render(){const T=S.ticks,L=T[T.length-1];
+$("tk-sym").textContent=(MK.find(m=>m[0]==S.sym)||[0,S.sym])[1]+(S.demo?" — DEMO":"");
+$("tk-note").textContent=S.demo?"Synthetic random data. Not market data.":S.stat=="live"?"Live ticks from Deriv.":S.msg||"Press Start to connect.";
+$("tk-d").textContent=L?L.d:"–";$("tk-p").textContent=L?L.q.toFixed(S.pip):"–";$("tk-t").textContent=L?new Date(L.e*1000).toLocaleTimeString():"–";
+$("last20").innerHTML=digs(20).map(d=>`<b>${d}</b>`).join("");
+const w=digs(S.win),c=freq(w),hi=S.ct=="matches"||S.ct=="differs"?S.tgt:-1;
+$("bars").innerHTML=bars(c,w.length,hi);$("fq-n").textContent=`(last ${w.length} of ${S.win})`;
+$("sig").innerHTML=sigHTML();
+const s=pStats();$("pdash").innerHTML=`<div class="kv"><span>Virtual balance</span><span>${S.P.bal.toFixed(2)}</span></div><div class="kv"><span>Trades / win rate</span><span>${s.n} / ${pc(s.wr)}</span></div><div class="kv"><span>Simulated P/L</span><span>${s.net.toFixed(2)}</span></div><p class="sm mut">Simulated only.</p>`;
+if(S.view=="dig")renderDig();if(S.view=="lab")renderLab();if(S.view=="paper")renderPaper();if(S.view=="comp")renderComp()}
+function renderDig(){const a=analyse(S.ct,S.tgt,S.thr,digs(S.win)),[h,ex]=verdict(a),ct=S.ct;let extra="";
+if(ct=="over"||ct=="under")extra=`<div class="sm mut">Qualifying digits: ${[0,1,2,3,4,5,6,7,8,9].filter(a.r.f).join(", ")||"none (choose another threshold)"}</div>`;
+if(ct=="matches"||ct=="differs"){const m=digs(S.win).filter(d=>d==S.tgt).length,n=a.n;extra=`<div class="kv"><span>Matches / Differs</span><span>${m} / ${n-m}</span></div><div class="kv"><span>Match % / Differ %</span><span>${n?pc(m/n):"–"} / ${n?pc(1-m/n):"–"}</span></div>`}
+if(ct=="even"||ct=="odd"){const e=digs(S.win).filter(d=>d%2==0).length,n=a.n;extra=`<div class="kv"><span>Even / Odd</span><span>${e} (${n?pc(e/n):"–"}) / ${n-e} (${n?pc(1-e/n):"–"})</span></div>`}
+const rec=a.res.slice(-30).map((v,i,ar)=>`<b class="${v?"t":""}">${digs(30)[digs(30).length-ar.length+i]}</b>`).join("");
+$("dig-out").innerHTML=`<div class="kv"><span>Sample</span><span>${a.n}</span></div><div class="kv"><span>Outcome occurred</span><span>${a.k} (${a.n?pc(a.obs):"–"})</span></div><div class="kv"><span>Uniform rate</span><span>${pc(a.base,0)}</span></div><div class="kv"><span>95% interval</span><span>${a.n?pc(a.ci[0])+"–"+pc(a.ci[1]):"–"}</span></div><div class="kv"><span>Consecutive occurrences / non-occurrences</span><span>${a.st.yes} / ${a.st.no}</span></div>${extra}
+<div class="sm" style="margin:8px 0 4px">Last 30 ticks (highlighted = outcome occurred)</div><div class="chips">${rec}</div><div class="note">${h}. ${ex} Streaks and frequencies do not predict the next tick.</div>`;
+const w=digs(S.win),c=freq(w);$("ftab").innerHTML="<tr><th>Digit</th><th>Count</th><th>%</th><th>vs 10%</th></tr>"+c.map((v,d)=>`<tr><td>${d}</td><td>${v}</td><td>${w.length?pc(v/w.length):"–"}</td><td>${w.length?((v/w.length-.1)*100).toFixed(1):"–"}</td></tr>`).join("")}
+function renderLab(){const d=S.ticks.map(t=>t.d),r=predLab(d);
+$("lab-out").innerHTML=!r?`<div class="note">Need at least 200 ticks (have ${d.length}). Insufficient sample for meaningful evaluation.</div>`:
+`<div class="sm mut">${r.cut} training ticks · ${r.m} evaluated predictions · baseline (uniform guess) 10.0%</div><div class="tw"><table><tr><th>Method</th><th>Correct</th><th>Accuracy</th><th>95% CI</th></tr>${Object.entries(r.M).map(([k,v])=>{const ci=wilson(v,r.m);return`<tr><td>${k}</td><td>${v}/${r.m}</td><td>${pc(v/r.m)}</td><td>${pc(ci[0])}–${pc(ci[1])}</td></tr>`}).join("")}</table></div>
+<p class="sm mut">${Object.values(r.M).every(v=>{const ci=wilson(v,r.m);return ci[0]<=.1&&.1<=ci[1]})?"All intervals include 10%: no evidence any method beats chance.":"An interval excludes 10% here — re-test on fresh data before reading anything into it; one holdout is not proof."} Training-set accuracy is deliberately not shown.</p>`;
+const b=backtest(S.ct,S.tgt,S.thr,d);
+if(!b.n){$("bt-out").innerHTML=`<div class="note">Need more than 100 ticks.</div>`;return}
+const ci=wilson(b.ok,b.n);let all="";
+if(S.ct=="matches"||S.ct=="differs")all=`<h2 style="margin-top:10px">Each target digit, tested separately</h2><div class="tw"><table><tr><th>Digit</th><th>Accuracy</th><th>Trades</th></tr>${[0,1,2,3,4,5,6,7,8,9].map(t=>{const x=backtest(S.ct,t,0,d);return`<tr><td>${t}</td><td>${pc(x.ok/x.n)}</td><td>${x.n}</td></tr>`}).join("")}</table></div>`;
+$("bt-out").innerHTML=`<div class="kv"><span>${CT_LABEL[S.ct]} ${S.ct=="over"||S.ct=="under"?S.thr:S.ct=="matches"||S.ct=="differs"?S.tgt:""} — simulated predictions</span><span>${b.n}</span></div><div class="kv"><span>Correct / incorrect</span><span>${b.ok} / ${b.n-b.ok}</span></div><div class="kv"><span>Accuracy (95% CI)</span><span>${pc(b.ok/b.n)} (${pc(ci[0])}–${pc(ci[1])})</span></div><div class="kv"><span>Baseline: always predict the majority outcome</span><span>${pc(b.maj)}</span></div>
+<table style="margin-top:8px"><tr><th>Confusion</th><th>Actual: yes</th><th>Actual: no</th></tr><tr><td>Predicted yes</td><td>${b.cm.tp}</td><td>${b.cm.fp}</td></tr><tr><td>Predicted no</td><td>${b.cm.fn}</td><td>${b.cm.tn}</td></tr></table>
+<div class="sm" style="margin-top:8px">Last 25 simulated results (chronological)</div><div class="tw"><table><tr><th>#</th><th>Digit</th><th>Predicted</th><th>Actual</th><th>Result</th></tr>${b.rows.slice(-25).map(r=>`<tr><td>${r.i}</td><td>${r.dg}</td><td>${r.p?"yes":"no"}</td><td>${r.a?"yes":"no"}</td><td>${r.p==r.a?"correct":"incorrect"}</td></tr>`).join("")}</table></div><div class="note">Simulated results only. They are not real trading performance.</div>${all}`}
+const PF={start:"Starting balance",stake:"Stake",tgt:"Target digit",thr:"Over/Under threshold",max:"Max trades",sl:"Stop after loss of",sp:"Stop after profit of",pay:"Win profit × stake (assumed)"};
+function buildPaper(){$("pcfg").innerHTML=Object.entries(PF).map(([k,l])=>`<div><label>${l}</label><input data-p="${k}" type="number" step="any" value="${S.P[k]}"></div>`).join("")+
+`<div><label>Contract</label><select data-p="ct">${Object.entries(CT_LABEL).map(([k,v])=>`<option value="${k}" ${S.P.ct==k?"selected":""}>${v}</option>`).join("")}</select></div><div><label>Entry rule</label><select data-p="rule"><option value="every" ${S.P.rule=="every"?"selected":""}>Every tick</option><option value="manual" ${S.P.rule=="manual"?"selected":""}>Manual (button)</option></select></div>`;
+$("pcfg").oninput=e=>{const k=e.target.dataset.p;if(!k)return;S.P[k]=e.target.tagName=="SELECT"&&k!="rule"&&k!="ct"?+e.target.value:(k=="ct"||k=="rule")?e.target.value:+e.target.value;if(k=="start"&&!S.P.trades.length)S.P.bal=S.P.start;save()}}
+function renderPaper(){const s=pStats();$("p-out").innerHTML=`<div class="kv"><span>Status</span><span>${S.P.on?"Running":"Stopped"}${S.P.why?" — "+S.P.why:""}</span></div><div class="kv"><span>Virtual balance</span><span>${S.P.bal.toFixed(2)}</span></div><div class="kv"><span>Trades (W / L)</span><span>${s.n} (${s.w} / ${s.l})</span></div><div class="kv"><span>Win rate</span><span>${pc(s.wr)}</span></div><div class="kv"><span>Simulated P/L</span><span>${s.net.toFixed(2)}</span></div><div class="kv"><span>Max drawdown</span><span>${s.dd.toFixed(2)}</span></div><div class="kv"><span>Profit factor</span><span>${s.pf==null?"n/a":s.pf.toFixed(2)}</span></div>
+<div class="tw" style="margin-top:8px"><table><tr><th>#</th><th>Time</th><th>Contract</th><th>Digit</th><th>Result</th><th>P/L</th><th>Balance</th></tr>${S.P.trades.slice(-50).reverse().map(t=>`<tr><td>${t.n}</td><td>${t.t}</td><td>${CT_LABEL[t.ct]}</td><td>${t.dg}</td><td>${t.win?"win":"loss"}</td><td>${t.pnl.toFixed(2)}</td><td>${t.bal.toFixed(2)}</td></tr>`).join("")}</table></div>`}
+function summary(){const L=S.ticks[S.ticks.length-1],a=analyse(S.ct,S.tgt,S.thr,digs(S.win)),[h]=verdict(a),s=pStats();
+return`DigitScope AI Pro — ${new Date().toLocaleString()}\nMarket: ${S.sym}${S.demo?" (DEMO DATA)":""}\nLast digit: ${L?L.d:"–"}\nContract: ${CT_LABEL[S.ct]} ${S.ct=="over"||S.ct=="under"?S.thr:S.ct=="matches"||S.ct=="differs"?S.tgt:""}\nObserved: ${a.n?pc(a.obs):"–"} of ${a.n} ticks (uniform ${pc(a.base,0)})\nStatus: ${h}\nForecast: not reliably established\nPaper: ${s.n} trades, P/L ${s.net.toFixed(2)} (simulated)`}
+function renderComp(){$("comp-out").innerHTML=`<pre>${summary()}</pre><div class="big" style="font-size:40px">${S.ticks.length?S.ticks[S.ticks.length-1].d:"–"}</div>`;
+$("c-log").innerHTML=S.obs.length?"Manual reviews: "+S.obs.slice(-5).join(" · "):"No manual reviews logged yet."}
+
+/* ---------- utilities ---------- */
+function save(){try{localStorage.setItem("dsp",JSON.stringify({sym:S.sym,win:S.win,tgt:S.tgt,thr:S.thr,ct:S.ct,mode:S.mode,P:Object.fromEntries(PK.map(k=>[k,S.P[k]]))}))}catch(e){}}
+function load(){try{const o=JSON.parse(localStorage.getItem("dsp")||"{}");["sym","win","tgt","thr","ct","mode"].forEach(k=>{if(o[k]!==undefined)S[k]=o[k]});if(o.P)Object.assign(S.P,o.P);S.P.bal=S.P.start}catch(e){}}
+function dl(name,txt){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv"}));a.download=name;a.click()}
+function selftest(){const t=[];const ok=(n,c)=>t.push((c?"PASS ":"FAIL ")+n);
+ok("digit pip2 1234.50→0",lastDigit(1234.5,2)==0);ok("digit pip3 0.1→0",lastDigit(0.1,3)==0);ok("digit pip2 1234.57→7",lastDigit(1234.57,2)==7);ok("digit pip4 99.1234→4",lastDigit(99.1234,4)==4);
+const s=[1,2,2,3,7,7,7,0,9,7];const c=freq(s);ok("freq total",c.reduce((a,b)=>a+b)==10&&c[7]==4&&c[2]==2);
+const a=analyse("matches",7,0,s);ok("matches count",a.k==4&&Math.abs(a.obs-.4)<1e-9&&a.base==.1);ok("current run",a.st.yes==1&&a.st.no==0);
+ok("even base .5",rule("even",0,0).base==.5);ok("over 4 base .5",rule("over",0,4).base==.5);ok("under 0 base 0",rule("under",0,0).base==0);
+const w=wilson(50,100);ok("wilson(50/100)≈.404–.596",Math.abs(w[0]-.4038)<.002&&Math.abs(w[1]-.5962)<.002);
+const rnd=Array.from({length:600},(_,i)=>(i*7+3*(i%5))%10),b=backtest("even",0,0,rnd);ok("backtest counts add up",b.cm.tp+b.cm.fp+b.cm.fn+b.cm.tn==b.n&&b.n==500);
+const seq=[0,1,2,3,4,5,6,7,8,9,0,1];ok("lab predictions use holdout only",predLab(Array.from({length:300},(_,i)=>i%10)).m==90);
+return t.join("\n")}
+
+/* ---------- init ---------- */
+function init(){load();
+$("sym").innerHTML=MK.map(m=>`<option value="${m[0]}">${m[1]}</option>`).join("");$("sym").value=S.sym;$("mode").value=S.mode;
+const dopt=(id,f)=>{$(id).innerHTML=[0,1,2,3,4,5,6,7,8,9].map(d=>`<option>${d}</option>`).join("");$(id).value=S[f]};dopt("tgt","tgt");dopt("thr","thr");$("ct").value=S.ct;
+$("nav").innerHTML=VIEWS.map(v=>`<button data-v="${v[0]}">${v[1]}</button>`).join("");
+const show=v=>{S.view=v;document.querySelectorAll(".v").forEach(e=>e.classList.toggle("on",e.id=="v-"+v));document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v==v));render()};
+$("nav").onclick=e=>e.target.dataset.v&&show(e.target.dataset.v);
+const setWin=w=>{S.win=w;document.querySelectorAll("#win button").forEach(b=>b.classList.toggle("on",+b.dataset.w==w));save();render()};
+$("win").onclick=e=>e.target.dataset.w&&setWin(+e.target.dataset.w);
+$("sym").onchange=e=>{S.sym=e.target.value;S.ticks=[];S.seen=new Set();save();if(S.running)start();else render()};
+$("mode").onchange=e=>{S.mode=e.target.value;save()};
+["ct","tgt","thr"].forEach(id=>$(id).onchange=e=>{S[id]=id=="ct"?e.target.value:+e.target.value;save();render()});
+$("go").onclick=()=>{if(S.running){stop();setStatus("idle");$("go").textContent="Start";render()}else start()};
+$("clr").onclick=()=>{S.ticks=[];S.seen=new Set();render()};
+$("demo").onchange=()=>{if(S.running)start()};
+$("p-on").onclick=()=>{const P=S.P;if(P.on){P.on=false;P.why="Stopped by user";$("p-on").textContent="Start paper session"}else{P.on=true;P.why="";P.pend=null;$("p-on").textContent="Stop paper session"}render()};
+$("p-arm").onclick=()=>{if(S.P.on&&S.P.rule=="manual")S.P.arm=true};
+$("p-reset").onclick=()=>{const P=S.P;P.trades=[];P.bal=P.start;P.pend=null;P.on=false;P.why="";$("p-on").textContent="Start paper session";render()};
+$("c-copy").onclick=async()=>{const t=summary();try{await navigator.clipboard.writeText(t)}catch(e){const x=document.createElement("textarea");x.value=t;document.body.append(x);x.select();document.execCommand("copy");x.remove()}$("c-copy").textContent="Copied";setTimeout(()=>$("c-copy").textContent="Copy summary",1200)};
+$("c-mark").onclick=()=>{S.obs.push(new Date().toLocaleTimeString());renderComp()};
+$("x-ticks").onclick=()=>dl("ticks.csv","epoch,quote,digit\n"+S.ticks.map(t=>[t.e,t.q,t.d].join(",")).join("\n"));
+$("x-tr").onclick=()=>dl("paper-trades.csv","n,time,contract,digit,result,pnl,balance\n"+S.P.trades.map(t=>[t.n,t.t,t.ct,t.dg,t.win?"win":"loss",t.pnl.toFixed(2),t.bal.toFixed(2)].join(",")).join("\n"));
+$("selftest").onclick=()=>$("test-out").textContent=selftest();
+buildPaper();setWin(S.win);show("dash");setStatus("idle")}
+init();
+</script></body></html>
